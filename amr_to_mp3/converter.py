@@ -110,16 +110,25 @@ def resolve_ffmpeg_binary() -> Path:
 
 
 def build_ffmpeg_command(ffmpeg_path: Path | str, task: ConversionTask) -> tuple[str, ...]:
-    return (
-        str(ffmpeg_path),
-        "-y",
-        "-hide_banner",
-        "-loglevel",
-        "error",
-        "-i",
-        str(task.input_path),
-        "-vn",
-        str(task.output_path),
+    binary = Path(ffmpeg_path)
+    executable: list[str]
+    if binary.suffix.lower() == ".py":
+        executable = [sys.executable, str(binary)]
+    else:
+        executable = [str(binary)]
+
+    return tuple(
+        executable
+        + [
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            str(task.input_path),
+            "-vn",
+            str(task.output_path),
+        ]
     )
 
 
