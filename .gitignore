@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+.python-version
+.pytest_cache/
+dist/
+build/AMRToMP3/
+build/__pycache__/
