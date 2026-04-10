@@ -35,12 +35,18 @@ jobs:
         shell: pwsh
         run: |
           choco install ffmpeg -y --no-progress
-          $shim = 'C:\ProgramData\chocolatey\bin\ffmpeg.exe'
-          if (-not (Test-Path $shim)) {
-            throw "ffmpeg.exe was not found at $shim"
+          $ffmpegToolsDir = 'C:\ProgramData\chocolatey\lib\ffmpeg\tools'
+          $realBinary = Get-ChildItem -Path $ffmpegToolsDir -Recurse -Filter ffmpeg.exe |
+            Select-Object -First 1 -ExpandProperty FullName
+          if (-not $realBinary) {
+            throw "ffmpeg.exe was not found under $ffmpegToolsDir"
+          }
+          & $realBinary -version | Select-Object -First 1
+          if ($LASTEXITCODE -ne 0) {
+            throw "ffmpeg.exe at $realBinary is not runnable"
           }
           New-Item -ItemType Directory -Force -Path vendor/ffmpeg | Out-Null
-          Copy-Item $shim vendor/ffmpeg/ffmpeg.exe -Force
+          Copy-Item $realBinary vendor/ffmpeg/ffmpeg.exe -Force
 
       - name: Run tests
         shell: pwsh
@@ -51,6 +57,18 @@ jobs:
         shell: pwsh
         run: |
           powershell -ExecutionPolicy Bypass -File .\build\windows\build.ps1
+
+      - name: Smoke test bundled ffmpeg
+        shell: pwsh
+        run: |
+          $bundledFfmpeg = '.\dist\AMRToMP3\_internal\ffmpeg.exe'
+          if (-not (Test-Path $bundledFfmpeg)) {
+            throw "Bundled ffmpeg.exe was not found at $bundledFfmpeg"
+          }
+          & $bundledFfmpeg -version | Select-Object -First 1
+          if ($LASTEXITCODE -ne 0) {
+            throw "Bundled ffmpeg.exe is not runnable"
+          }
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

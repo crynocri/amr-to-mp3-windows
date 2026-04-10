@@ -16,6 +16,13 @@ if (-not (Test-Path $bundledFfmpeg)) {
     Write-Warning "Bundled ffmpeg.exe was not found at $bundledFfmpeg"
     Write-Warning "The app can still build, but end users will need ffmpeg on PATH or AMR_TO_MP3_FFMPEG configured."
 }
+else {
+    Write-Host "Validating bundled ffmpeg binary: $bundledFfmpeg"
+    & $bundledFfmpeg -version | Select-Object -First 1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Bundled ffmpeg.exe exists but is not runnable. Use the real ffmpeg binary instead of a package-manager shim."
+    }
+}
 
 Push-Location $projectRoot
 try {
