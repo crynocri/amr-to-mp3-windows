@@ -12,6 +12,21 @@ from amr_to_mp3.__main__ import main
 
 
 class EntryPointTests(unittest.TestCase):
+    def test_probe_ffmpeg_uses_devnull_stdin(self) -> None:
+        with patch("amr_to_mp3.__main__._load_resolve_ffmpeg_binary", return_value=lambda: Path("ffmpeg.exe")):
+            with patch("subprocess.run") as run:
+                run.return_value = subprocess.CompletedProcess(
+                    ["ffmpeg.exe", "-version"],
+                    0,
+                    stdout="ffmpeg version test\n",
+                    stderr="",
+                )
+
+                output = main(["--probe-ffmpeg"])
+
+        self.assertEqual(output, 0)
+        self.assertEqual(run.call_args.kwargs["stdin"], subprocess.DEVNULL)
+
     def test_main_probe_ffmpeg_exits_without_launching_gui(self) -> None:
         stdout = io.StringIO()
 

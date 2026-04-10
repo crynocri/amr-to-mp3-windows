@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -60,6 +61,23 @@ class ConversionPlanningTests(unittest.TestCase):
 
 
 class ConversionExecutionTests(unittest.TestCase):
+    def test_convert_file_uses_devnull_stdin(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = write_minimal_amr(root / "voice.amr")
+            task = plan_conversion(source, root / "out")
+
+            def fake_run(command, **kwargs):
+                task.output_path.parent.mkdir(parents=True, exist_ok=True)
+                task.output_path.write_bytes(b"ID3")
+                return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+            with patch("amr_to_mp3.converter.subprocess.run", side_effect=fake_run) as run:
+                result = convert_file(task, ffmpeg_path=Path("ffmpeg.exe"))
+
+            self.assertTrue(result.succeeded)
+            self.assertEqual(run.call_args.kwargs["stdin"], subprocess.DEVNULL)
+
     def test_convert_file_runs_ffmpeg_and_creates_output(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

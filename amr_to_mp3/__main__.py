@@ -46,7 +46,13 @@ def _probe_ffmpeg_binary() -> str:
     if ffmpeg_path.suffix.lower() == ".py":
         command.insert(0, sys.executable)
 
-    completed = subprocess.run(command, capture_output=True, text=True, check=False)
+    completed = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        check=False,
+        stdin=subprocess.DEVNULL,
+    )
     output = completed.stdout.strip() or completed.stderr.strip()
     if completed.returncode != 0:
         message = output or f"ffmpeg probe failed with exit code {completed.returncode}"

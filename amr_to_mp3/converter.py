@@ -137,7 +137,13 @@ def convert_file(task: ConversionTask, ffmpeg_path: Path | str | None = None) ->
     task.output_path.parent.mkdir(parents=True, exist_ok=True)
 
     command = build_ffmpeg_command(binary, task)
-    completed = subprocess.run(command, capture_output=True, text=True, check=False)
+    completed = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        check=False,
+        stdin=subprocess.DEVNULL,
+    )
     succeeded = completed.returncode == 0 and task.output_path.exists()
     stderr = completed.stderr.strip()
     if completed.returncode == 0 and not task.output_path.exists():
