@@ -12,6 +12,17 @@ from amr_to_mp3.__main__ import main
 
 
 class EntryPointTests(unittest.TestCase):
+    def test_main_probe_ffmpeg_skips_print_when_stdout_is_not_writable(self) -> None:
+        class BadStdout:
+            def flush(self) -> None:
+                return None
+
+        with patch("amr_to_mp3.__main__._probe_ffmpeg_binary", return_value="ffmpeg ok"):
+            with patch.object(sys, "stdout", BadStdout()):
+                exit_code = main(["--probe-ffmpeg"])
+
+        self.assertEqual(exit_code, 0)
+
     def test_probe_ffmpeg_uses_devnull_stdin(self) -> None:
         with patch("amr_to_mp3.__main__._load_resolve_ffmpeg_binary", return_value=lambda: Path("ffmpeg.exe")):
             with patch("subprocess.run") as run:

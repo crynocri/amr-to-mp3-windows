@@ -14,6 +14,11 @@ def _ensure_project_root_on_path() -> None:
         sys.path.insert(0, project_root_str)
 
 
+def _write_line(stream: object, message: str) -> None:
+    if callable(getattr(stream, "write", None)):
+        print(message, file=stream)
+
+
 def _load_launch_gui():
     if __package__:
         from .gui import launch_gui
@@ -77,13 +82,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         if args.probe_ffmpeg:
-            print(_probe_ffmpeg_binary())
+            _write_line(sys.stdout, _probe_ffmpeg_binary())
             return 0
 
         launch_gui = _load_launch_gui()
         launch_gui()
     except RuntimeError as exc:
-        print(str(exc), file=sys.stderr)
+        _write_line(sys.stderr, str(exc))
         return 1
 
     return 0
