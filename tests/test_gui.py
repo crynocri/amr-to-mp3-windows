@@ -168,6 +168,12 @@ class GuiLocalizationTests(unittest.TestCase):
         app = ConverterApp(root, FakeTk, filedialog, messagebox, ttk)
         return app, root, filedialog, messagebox, ttk
 
+    def test_converter_app_starts_tall_enough_to_show_log_area(self) -> None:
+        _app, root, _filedialog, _messagebox, _ttk = self._make_app()
+
+        self.assertEqual(root.window_geometry, "760x680")
+        self.assertEqual(root.minimum_size, (680, 620))
+
     def test_converter_app_uses_chinese_layout_text(self) -> None:
         app, root, _filedialog, _messagebox, ttk = self._make_app()
         label_texts = [widget.options["text"] for widget in ttk.labels if "text" in widget.options]

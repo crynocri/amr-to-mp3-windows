@@ -58,8 +58,8 @@ class ConverterApp:
         self.status_var = tk.StringVar(value="就绪")
 
         self.root.title("AMR 转 MP3 转换工具")
-        self.root.geometry("760x520")
-        self.root.minsize(680, 480)
+        self.root.geometry("760x680")
+        self.root.minsize(680, 620)
 
         self._build_layout()
 
