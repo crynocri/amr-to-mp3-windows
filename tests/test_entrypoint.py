@@ -12,6 +12,18 @@ from amr_to_mp3.__main__ import main
 
 
 class EntryPointTests(unittest.TestCase):
+    def test_main_probe_ffmpeg_exits_without_launching_gui(self) -> None:
+        stdout = io.StringIO()
+
+        with contextlib.redirect_stdout(stdout):
+            with patch("amr_to_mp3.__main__._probe_ffmpeg_binary", return_value="ffmpeg ok", create=True):
+                with patch("amr_to_mp3.__main__._load_launch_gui") as launch_gui:
+                    exit_code = main(["--probe-ffmpeg"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("ffmpeg ok", stdout.getvalue())
+        launch_gui.assert_not_called()
+
     def test_main_script_runs_without_package_context(self) -> None:
         project_root = Path(__file__).resolve().parents[1]
         script_path = project_root / "amr_to_mp3" / "__main__.py"

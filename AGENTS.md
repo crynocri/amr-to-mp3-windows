@@ -65,7 +65,6 @@ If `gh run download` hits transient GitHub API EOF errors, use the artifact API 
 After download, verify these paths exist:
 
 - `artifacts/AMRToMP3-windows/AMRToMP3.exe`
-- `artifacts/AMRToMP3-windows/_internal/`
 
 Useful check:
 

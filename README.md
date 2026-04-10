@@ -14,17 +14,16 @@
 
 ## 推荐分发方式
 
-推荐使用 **PyInstaller one-folder** 打包为 Windows 桌面应用，并将 `ffmpeg.exe` 一起打包进分发目录。
+推荐使用 **PyInstaller onefile** 打包为 Windows 桌面应用，并将 `ffmpeg.exe` 一起打包进单文件程序。
 
-这样普通用户只需要解压后双击 `AMRToMP3.exe`，不需要额外安装 Python，也不需要手动配置命令行环境。
+这样普通用户只需要拿到一个 `AMRToMP3.exe`，不需要额外安装 Python，也不需要手动配置命令行环境。程序启动时会由 PyInstaller 自动解包运行时依赖。
 
 ## 运行方式
 
 ### 方式 1：直接运行已打包的 Windows 版本
 
 前提：
-- 使用 Windows 构建出的 `dist/AMRToMP3/` 分发目录
-- 目录内包含 `AMRToMP3.exe`
+- 使用 Windows 构建出的 `dist/AMRToMP3.exe`
 - 若构建时已打包 `ffmpeg.exe`，用户无需额外安装 ffmpeg
 
 运行：
@@ -93,14 +92,13 @@ powershell -ExecutionPolicy Bypass -File .\build\windows\build.ps1
 默认输出目录：
 
 ```text
-dist/AMRToMP3/
+dist/AMRToMP3.exe
 ```
 
-核心文件通常包括：
+核心产物通常包括：
 
 ```text
-dist/AMRToMP3/AMRToMP3.exe
-dist/AMRToMP3/ffmpeg.exe
+dist/AMRToMP3.exe
 ```
 
 ## 依赖说明
@@ -111,7 +109,7 @@ dist/AMRToMP3/ffmpeg.exe
 
 - 推荐使用已打包好的桌面版
 - 不需要单独安装 Python
-- 如果 `ffmpeg.exe` 已经随应用一起打包，则不需要额外安装 ffmpeg
+- 如果 `ffmpeg.exe` 已经随应用一起打包，则不需要额外安装 ffmpeg。单文件模式下，程序会在运行时临时解包该依赖。
 
 对开发者：
 

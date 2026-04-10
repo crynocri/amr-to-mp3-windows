@@ -62,13 +62,13 @@ jobs:
       - name: Smoke test bundled ffmpeg
         shell: pwsh
         run: |
-          $bundledFfmpeg = '.\dist\AMRToMP3\_internal\ffmpeg.exe'
-          if (-not (Test-Path $bundledFfmpeg)) {
-            throw "Bundled ffmpeg.exe was not found at $bundledFfmpeg"
+          $packageExe = '.\dist\AMRToMP3.exe'
+          if (-not (Test-Path $packageExe)) {
+            throw "Packaged executable was not found at $packageExe"
           }
-          $versionOutput = & $bundledFfmpeg -version 2>&1
+          $versionOutput = & .\dist\AMRToMP3.exe --probe-ffmpeg 2>&1
           if ($LASTEXITCODE -ne 0) {
-            throw "Bundled ffmpeg.exe is not runnable"
+            throw "Bundled ffmpeg probe failed"
           }
           $versionOutput | Select-Object -First 1
 
@@ -76,5 +76,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AMRToMP3-windows
-          path: dist/AMRToMP3
+          path: dist/AMRToMP3.exe
           if-no-files-found: error
