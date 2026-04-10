@@ -16,12 +16,16 @@ class WindowsPackagingConfigTests(unittest.TestCase):
 
         self.assertIn(r"dist\AMRToMP3\_internal\ffmpeg.exe", workflow)
         self.assertIn("-version", workflow)
+        self.assertIn("$versionOutput = & $bundledFfmpeg -version 2>&1", workflow)
+        self.assertNotIn("& $bundledFfmpeg -version | Select-Object -First 1", workflow)
 
     def test_build_script_validates_bundled_ffmpeg_before_packaging(self) -> None:
         build_script = Path("build/windows/build.ps1").read_text(encoding="utf-8")
 
         self.assertIn("$bundledFfmpeg", build_script)
         self.assertIn("-version", build_script)
+        self.assertIn("$versionOutput = & $bundledFfmpeg -version 2>&1", build_script)
+        self.assertNotIn("& $bundledFfmpeg -version | Select-Object -First 1", build_script)
 
 
 if __name__ == "__main__":

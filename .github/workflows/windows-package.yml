@@ -41,10 +41,11 @@ jobs:
           if (-not $realBinary) {
             throw "ffmpeg.exe was not found under $ffmpegToolsDir"
           }
-          & $realBinary -version | Select-Object -First 1
+          $versionOutput = & $realBinary -version 2>&1
           if ($LASTEXITCODE -ne 0) {
             throw "ffmpeg.exe at $realBinary is not runnable"
           }
+          $versionOutput | Select-Object -First 1
           New-Item -ItemType Directory -Force -Path vendor/ffmpeg | Out-Null
           Copy-Item $realBinary vendor/ffmpeg/ffmpeg.exe -Force
 
@@ -65,10 +66,11 @@ jobs:
           if (-not (Test-Path $bundledFfmpeg)) {
             throw "Bundled ffmpeg.exe was not found at $bundledFfmpeg"
           }
-          & $bundledFfmpeg -version | Select-Object -First 1
+          $versionOutput = & $bundledFfmpeg -version 2>&1
           if ($LASTEXITCODE -ne 0) {
             throw "Bundled ffmpeg.exe is not runnable"
           }
+          $versionOutput | Select-Object -First 1
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
