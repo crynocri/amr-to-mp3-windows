@@ -21,7 +21,9 @@ class WindowsPackagingConfigTests(unittest.TestCase):
     def test_workflow_smoke_tests_bundled_ffmpeg_after_packaging(self) -> None:
         workflow = Path(".github/workflows/windows-package.yml").read_text(encoding="utf-8")
 
-        self.assertIn(r".\dist\AMRToMP3.exe --probe-ffmpeg", workflow)
+        self.assertIn("Start-Process", workflow)
+        self.assertIn("--probe-ffmpeg", workflow)
+        self.assertIn("AMR_TO_MP3_PROBE_LOG", workflow)
         self.assertNotIn(r"dist\AMRToMP3\_internal\ffmpeg.exe", workflow)
 
     def test_build_script_validates_bundled_ffmpeg_before_packaging(self) -> None:

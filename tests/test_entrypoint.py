@@ -23,6 +23,16 @@ class EntryPointTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
 
+    def test_main_probe_ffmpeg_reports_unexpected_errors_cleanly(self) -> None:
+        stderr = io.StringIO()
+
+        with contextlib.redirect_stderr(stderr):
+            with patch("amr_to_mp3.__main__._probe_ffmpeg_binary", side_effect=OSError("probe failed")):
+                exit_code = main(["--probe-ffmpeg"])
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("probe failed", stderr.getvalue())
+
     def test_probe_ffmpeg_uses_devnull_stdin(self) -> None:
         with patch("amr_to_mp3.__main__._load_resolve_ffmpeg_binary", return_value=lambda: Path("ffmpeg.exe")):
             with patch("subprocess.run") as run:

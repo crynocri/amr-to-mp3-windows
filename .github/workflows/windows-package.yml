@@ -63,14 +63,21 @@ jobs:
         shell: pwsh
         run: |
           $packageExe = '.\dist\AMRToMP3.exe'
+          $probeLog = Join-Path $PWD 'amr-to-mp3-probe.log'
           if (-not (Test-Path $packageExe)) {
             throw "Packaged executable was not found at $packageExe"
           }
-          $versionOutput = & .\dist\AMRToMP3.exe --probe-ffmpeg 2>&1
-          if ($LASTEXITCODE -ne 0) {
+          if (Test-Path $probeLog) {
+            Remove-Item $probeLog -Force
+          }
+          $env:AMR_TO_MP3_PROBE_LOG = $probeLog
+          $process = Start-Process -FilePath $packageExe -ArgumentList '--probe-ffmpeg' -PassThru -Wait
+          if (Test-Path $probeLog) {
+            Get-Content $probeLog
+          }
+          if ($process.ExitCode -ne 0) {
             throw "Bundled ffmpeg probe failed"
           }
-          $versionOutput | Select-Object -First 1
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
