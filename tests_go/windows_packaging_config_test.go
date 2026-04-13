@@ -25,6 +25,26 @@ func readFileForTest(t *testing.T, relPath string) string {
 	return string(data)
 }
 
+func assertScriptParamBlockFirst(t *testing.T, scriptPath string) {
+	t.Helper()
+	content := readFileForTest(t, scriptPath)
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if !strings.HasPrefix(trimmed, "param(") {
+			t.Fatalf("%s should start with param(...) before any executable statements; first statement was %q", scriptPath, trimmed)
+		}
+		return
+	}
+	t.Fatalf("%s should contain a param(...) block", scriptPath)
+}
+
 func TestInstallerOutputsSetupExe(t *testing.T) {
 	installer := readFileForTest(t, "build/windows/installer.iss")
 
@@ -143,4 +163,9 @@ func TestPackageLocalPassesTargetArchToBuildScript(t *testing.T) {
 			t.Fatalf("package-local script should contain %q", token)
 		}
 	}
+}
+
+func TestWindowsHelperScriptsDeclareParamBlockFirst(t *testing.T) {
+	assertScriptParamBlockFirst(t, "scripts/windows/smoke-convert.ps1")
+	assertScriptParamBlockFirst(t, "scripts/windows/assert-context-menu.ps1")
 }

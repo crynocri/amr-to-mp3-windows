@@ -1,9 +1,9 @@
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
-
 param(
     [string]$ExePath = ".\dist\AMRToMP3.exe"
 )
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
 if (-not (Test-Path $ExePath)) {
     throw "Packaged executable was not found at $ExePath"

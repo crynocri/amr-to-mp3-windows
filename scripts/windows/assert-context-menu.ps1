@@ -1,10 +1,10 @@
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
-
 param(
     [string]$RootKey = 'HKCU:\Software\Classes\SystemFileAssociations\.amr\shell\AMRToMP3.Convert',
     [string]$ExpectedParentLabel = '格式转换'
 )
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
 function Assert-RegistryKey([string]$Path) {
     if (-not (Test-Path $Path)) {
