@@ -3,7 +3,6 @@
 ## Project Scope
 
 - This repo now ships a Windows desktop build centered on the Go binary (`AMRToMP3.exe`) + bundled `ffmpeg.exe` + context menu integration.
-- Legacy Python `amr_to_mp3` code remains in a dual-track migration window and must not be removed until migration validation is complete.
 - Release packaging should be produced by GitHub Actions on Windows, not by local macOS builds.
 - The packaging workflow is `.github/workflows/windows-package.yml`.
 - The uploaded artifact name is always `AMRToMP3-windows`.
@@ -16,12 +15,10 @@
 3. Push to `main` when the goal is to produce a new Windows package.
 4. The push automatically triggers `Build Windows EXE` when the change touches one of these paths:
    - `.github/workflows/windows-package.yml`
-   - `amr_to_mp3/**`
    - `cmd/**`
    - `internal/**`
    - `build/windows/**`
    - `scripts/windows/**`
-   - `tests/**`
    - `tests_go/**`
    - `README.md`
    - `AGENTS.md`
@@ -80,7 +77,6 @@ Useful check:
 
 ## Migration and Rollback
 
-- Keep Python and Go tracks running in parallel for 1-2 iterations before removing Python source.
 - Before major migration release, create a rollback tag (for example: `pre-go-migration-2026-04-13`).
 - If production issues are found, roll back to the last stable tag first, then continue fixes on the Go branch.
 

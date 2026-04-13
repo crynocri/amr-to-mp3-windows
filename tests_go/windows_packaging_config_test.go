@@ -1,0 +1,86 @@
+package tests_go
+
+import (
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"testing"
+)
+
+func readFileForTest(t *testing.T, relPath string) string {
+	t.Helper()
+
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatalf("resolve caller path failed")
+	}
+	repoRoot := filepath.Dir(filepath.Dir(thisFile))
+	path := filepath.Join(repoRoot, filepath.FromSlash(relPath))
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return string(data)
+}
+
+func TestInstallerOutputsSetupExe(t *testing.T) {
+	installer := readFileForTest(t, "build/windows/installer.iss")
+
+	if !strings.Contains(installer, "OutputBaseFilename=AMRToMP3-Setup") {
+		t.Fatalf("installer should output AMRToMP3-Setup.exe")
+	}
+	if !strings.Contains(installer, `Parameters: "install-shell"`) {
+		t.Fatalf("installer should call install-shell on install")
+	}
+	if !strings.Contains(installer, `Parameters: "uninstall-shell"`) {
+		t.Fatalf("installer should call uninstall-shell on uninstall")
+	}
+}
+
+func TestWorkflowRunsGoBuildPipeline(t *testing.T) {
+	workflow := readFileForTest(t, ".github/workflows/windows-package.yml")
+
+	for _, token := range []string{
+		"actions/setup-go",
+		"go test ./...",
+		`build\windows\build.ps1`,
+		`scripts\windows\assert-context-menu.ps1`,
+		`scripts\windows\smoke-convert.ps1`,
+		"install-shell",
+		"uninstall-shell",
+		"AMRToMP3-Setup.exe",
+	} {
+		if !strings.Contains(workflow, token) {
+			t.Fatalf("workflow should contain %q", token)
+		}
+	}
+}
+
+func TestWorkflowUsesRealChocolateyFfmpegBinary(t *testing.T) {
+	workflow := readFileForTest(t, ".github/workflows/windows-package.yml")
+
+	if strings.Contains(workflow, `C:\ProgramData\chocolatey\bin\ffmpeg.exe`) {
+		t.Fatalf("workflow should not use chocolatey shim path")
+	}
+	if !strings.Contains(workflow, `C:\ProgramData\chocolatey\lib\ffmpeg`) {
+		t.Fatalf("workflow should use real ffmpeg binary under chocolatey lib directory")
+	}
+}
+
+func TestBuildScriptUsesGoAndInnoSetup(t *testing.T) {
+	buildScript := readFileForTest(t, "build/windows/build.ps1")
+
+	for _, token := range []string{
+		"$bundledFfmpeg",
+		"-version",
+		"$versionOutput = & $bundledFfmpeg -version 2>&1",
+		"go build",
+		"iscc",
+	} {
+		if !strings.Contains(buildScript, token) {
+			t.Fatalf("build script should contain %q", token)
+		}
+	}
+}

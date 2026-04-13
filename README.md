@@ -102,16 +102,12 @@ dist/AMRToMP3-Setup.exe
 ```bash
 # Go 测试（含 tests_go）
 go test ./...
-
-# Python 旧轨回归测试（按需手动执行）
-python3 -m unittest discover -s tests -v
 ```
 
-## 双轨迁移说明
+## 迁移状态
 
-- Python 版本（`amr_to_mp3/**`）暂时保留，用于并行验证与回滚保障
-- 当前发布主线已切到 Go + Inno Setup
-- 计划在双轨验证完成后再移除 Python 代码
+- Python 版本代码已下线
+- 当前发布主线为 Go + Inno Setup
 
 ## 回滚策略
 

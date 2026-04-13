@@ -7,12 +7,10 @@ on:
       - main
     paths:
       - '.github/workflows/windows-package.yml'
-      - 'amr_to_mp3/**'
       - 'cmd/**'
       - 'internal/**'
       - 'build/windows/**'
       - 'scripts/windows/**'
-      - 'tests/**'
       - 'tests_go/**'
       - 'README.md'
       - 'AGENTS.md'
