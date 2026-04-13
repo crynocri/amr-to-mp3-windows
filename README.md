@@ -2,6 +2,19 @@
 
 面向普通用户的桌面版 AMR 转 MP3 工具，优先为 Windows 使用场景设计。
 
+## Go 重构迁移状态（进行中）
+
+- 已新增 Go CLI 工程骨架，入口位于 `cmd/amrtoolexe/main.go`
+- 当前已定义子命令：`convert`、`install-shell`、`uninstall-shell`、`probe`
+- 统一退出码已定义在 `internal/config/config.go`
+- 现阶段仍以 Python 版本为可用版本，Go 版本将在后续任务中补齐 FFmpeg 转换与 Windows 右键集成能力
+
+快速体验 Go 入口（开发中）：
+
+```bash
+go run ./cmd/amrtoolexe --help
+```
+
 ## 已实现的最小可用版本
 
 - 桌面 GUI，默认启动图形界面
