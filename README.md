@@ -1,206 +1,120 @@
-# AMR to MP3 Converter
+# AMR to MP3 Converter (Windows)
 
-面向普通用户的桌面版 AMR 转 MP3 工具，优先为 Windows 使用场景设计。
+面向 Windows 的 AMR 音频格式转换工具。当前主线实现为 **Go CLI + FFmpeg + 资源管理器右键菜单 + Inno Setup 安装器**。
 
-## Go 重构迁移状态（进行中）
+## 当前实现状态
 
-- 已新增 Go CLI 工程骨架，入口位于 `cmd/amrtoolexe/main.go`
-- 当前已定义子命令：`convert`、`install-shell`、`uninstall-shell`、`probe`
-- 统一退出码已定义在 `internal/config/config.go`
-- 现阶段仍以 Python 版本为可用版本，Go 版本将在后续任务中补齐 FFmpeg 转换与 Windows 右键集成能力
+- 主入口：`cmd/amrtoolexe/main.go`
+- 已支持子命令：`convert`、`probe`、`install-shell`、`uninstall-shell`
+- Windows 右键菜单安装范围：`HKCU\Software\Classes`（当前用户，无需管理员）
+- 打包产物：`dist/AMRToMP3.exe` 与 `dist/AMRToMP3-Setup.exe`
+- GitHub Actions artifact 名称保持为：`AMRToMP3-windows`
 
-快速体验 Go 入口（开发中）：
+## 功能说明（Go 主线）
+
+### 转换能力
+
+- 输入格式：`.amr`
+- 目标格式：`mp3`、`wav`、`aac`、`m4a`
+- 批量转换：支持（`--files` 使用 `;` 分隔，或传入多个尾随文件参数）
+- 并发：默认自动 2-4 个 worker（可通过 `--workers` 指定）
+- 输出冲突策略：自动递增命名，不覆盖已有文件（例如 `name.mp3`、`name (1).mp3`）
+
+### 右键菜单
+
+- 父菜单：`格式转换`
+- 子菜单：`转换为 MP3/WAV/AAC/M4A`
+- 当前命令模板使用 `"%1"` 占位符（单次调用单文件）
+- 安装器会在安装时执行 `install-shell`，卸载时执行 `uninstall-shell`
+
+## 快速使用（开发态）
 
 ```bash
+# 查看帮助
 go run ./cmd/amrtoolexe --help
-```
 
-## 当前发布策略（双轨）
-
-- **Go + FFmpeg + 右键菜单** 是新主线（Phase 1 目标形态）
-- **Python GUI 版本** 暂时保留，作为迁移期间回归对照与紧急回退路径
-- 计划在 1-2 个迭代内并行验证后，再执行 Python 代码下线
-
-## 已实现的最小可用版本
-
-- 桌面 GUI，默认启动图形界面
-- 支持单文件转换
-- 支持批量转换
-- 输入 `.amr`，输出同名 `.mp3`
-- 可选自定义输出目录
-- 可选手动指定 `ffmpeg` 可执行文件路径
-- 自动记录转换日志并汇总成功/失败数量
-
-## 推荐分发方式
-
-当前推荐使用 **Go 二进制 + Inno Setup 安装器** 发布 Windows 版本，并将 `ffmpeg.exe` 放入安装目录 `bin\ffmpeg.exe`。
-
-这样普通用户只需要安装 `AMRToMP3-Setup.exe`，安装后可通过资源管理器右键菜单执行转换。安装器会负责注册/卸载右键菜单。
-
-说明：旧的 PyInstaller onefile 流程仍保留在仓库历史中，便于双轨阶段回归验证。
-
-## Go 版本核心命令
-
-```bash
 # 检测 ffmpeg 可用性
 go run ./cmd/amrtoolexe probe
 
-# 单文件转换（输出到源文件同目录）
+# 转换单文件
 go run ./cmd/amrtoolexe convert --to mp3 --files "C:\path\voice.amr"
 
-# 安装/卸载右键菜单（Windows）
-go run ./cmd/amrtoolexe install-shell
-go run ./cmd/amrtoolexe uninstall-shell
+# 转换多文件（; 分隔）
+go run ./cmd/amrtoolexe convert --to wav --files "C:\a.amr;C:\b.amr"
 ```
 
-## 运行方式
+在非 Windows 系统上，`install-shell` / `uninstall-shell` 会返回不支持错误，这是预期行为。
 
-### 方式 1：直接运行已打包的 Windows 版本
+## FFmpeg 查找顺序
 
-前提：
-- 使用 Windows 构建出的 `dist/AMRToMP3.exe`
-- 若构建时已打包 `ffmpeg.exe`，用户无需额外安装 ffmpeg
+程序按以下顺序查找 ffmpeg：
 
-运行：
+1. 可执行文件目录下的 `bin/ffmpeg.exe`
+2. 环境变量 `AMR_TO_MP3_FFMPEG`
+3. 系统 `PATH` 中的 `ffmpeg.exe` / `ffmpeg`
 
-1. 双击 `AMRToMP3.exe`
-2. 点击 `Add Files` 选择一个或多个 `.amr` 文件
-3. 或点击 `Add Folder` 导入某个目录下的 `.amr` 文件
-4. 可选设置输出目录；不设置时默认输出到原文件所在目录
-5. 点击 `Convert to MP3`
+## Windows 打包
 
-### 方式 2：开发模式运行
+### 构建依赖
 
-前提：
-- Python 3.11+
-- Python 发行版带 Tkinter
-- 本机已安装 `ffmpeg`，或者设置环境变量 `AMR_TO_MP3_FFMPEG`
+- Go（`go.mod` 当前声明 `go 1.23`）
+- Inno Setup（`iscc` 可执行）
+- `vendor/ffmpeg/ffmpeg.exe`（可运行的真实二进制）
 
-启动：
-
-```bash
-python3 -m amr_to_mp3
-```
-
-查看帮助：
-
-```bash
-python3 -m amr_to_mp3 --help
-```
-
-## 构建方式
-
-Windows 上构建更稳妥，因为：
-
-- 官方 Windows Python 通常自带 Tkinter
-- PyInstaller 的最终产物应当在目标平台构建
-- 需要一起验证 `ffmpeg.exe` 的捆绑行为
-
-### 1. 准备依赖
-
-必需项：
-- Windows
-- Python 3.11 或更高版本，建议使用官方安装包
-- `pip`
-- `PyInstaller`
-- `ffmpeg.exe`
-
-安装 PyInstaller：
-
-```powershell
-py -m pip install pyinstaller
-```
-
-准备 ffmpeg：
-
-1. 下载 Windows 版 `ffmpeg.exe`
-2. 放到仓库路径 `vendor/ffmpeg/ffmpeg.exe`
-
-### 2. 运行构建脚本
+### 构建命令
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\build\windows\build.ps1
 ```
 
-### 3. 产物位置
+### 一键本地打包（Windows）
 
-默认输出目录：
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build\windows\package-local.ps1 -InstallTools
+```
+
+可选参数：
+
+- `-SkipTests`：跳过 Go 测试后直接打包
+- `-InstallTools`：自动安装缺失的 Go / Inno Setup / Chocolatey / ffmpeg
+
+### 产物
 
 ```text
 dist/AMRToMP3.exe
+dist/AMRToMP3-Setup.exe
 ```
 
-核心产物通常包括：
+## CI/CD
 
-```text
-dist/AMRToMP3.exe
-```
+工作流：`.github/workflows/windows-package.yml`
 
-## 依赖说明
+主要步骤：
 
-### 运行时依赖
+- Windows runner 安装 Go、Inno Setup、ffmpeg
+- 执行 `go test ./...`
+- 执行 `build/windows/build.ps1`
+- 执行 `scripts/windows/smoke-convert.ps1`
+- 上传 artifact：`AMRToMP3-windows`
 
-对最终 Windows 用户：
-
-- 推荐使用已打包好的桌面版
-- 不需要单独安装 Python
-- 如果 `ffmpeg.exe` 已经随应用一起打包，则不需要额外安装 ffmpeg。单文件模式下，程序会在运行时临时解包该依赖。
-
-对开发者：
-
-- Python 3.11+
-- Tkinter
-- ffmpeg
-
-### 构建时依赖
-
-- PyInstaller
-- Windows 版 `ffmpeg.exe`
-
-## ffmpeg 查找顺序
-
-程序按下面顺序寻找 ffmpeg：
-
-1. 环境变量 `AMR_TO_MP3_FFMPEG`
-2. 打包后的应用目录中的 `ffmpeg.exe`
-3. PyInstaller 解包目录中的 `ffmpeg.exe`
-4. 系统 `PATH` 中的 `ffmpeg`
-
-## 自测方式
-
-运行自动化测试：
+## 测试与验证
 
 ```bash
+# Go 测试（含 tests_go）
 go test ./...
+
+# Python 旧轨回归测试（按需手动执行）
 python3 -m unittest discover -s tests -v
 ```
 
-单独执行 Go 的 FFmpeg 参数与转换相关测试：
+## 双轨迁移说明
 
-```bash
-go test ./tests_go -v
-```
+- Python 版本（`amr_to_mp3/**`）暂时保留，用于并行验证与回滚保障
+- 当前发布主线已切到 Go + Inno Setup
+- 计划在双轨验证完成后再移除 Python 代码
 
-单独执行 Python 旧版回归测试：
+## 回滚策略
 
-```bash
-python3 -m unittest discover -s tests -v
-```
-
-单独执行真实 ffmpeg 冒烟测试：
-
-```bash
-python3 -m unittest tests.test_converter.ConverterSmokeTests.test_real_ffmpeg_smoke_conversion -v
-```
-
-## 当前限制
-
-- 当前仓库中的 GUI 使用 Tkinter。若开发机 Python 缺少 Tk 支持，`python3 -m amr_to_mp3` 会给出明确错误提示。
-- 本次交付已在当前机器完成核心转换和入口层自动化验证，但 **Windows GUI 实际点选流程** 仍需在带 Tk 的 Windows 环境做一次人工确认。
-- 批量导入目录当前为非递归模式，只导入所选目录下的 `.amr` 文件。
-
-## 回滚策略（发布级）
-
-- 在 Go 主线发布前，保留可回退标签（示例：`pre-go-migration-2026-04-13`）
-- 若线上发现关键问题，可先回切到最近稳定标签，再继续修复 Go 分支
-- 回滚后仍保持 artifact 名称 `AMRToMP3-windows`，降低分发链路变更风险
+- 发布前保留回滚标签（例如 `pre-go-migration-2026-04-13`）
+- 若新版本出现关键问题，优先回切到最近稳定标签
+- 回滚后继续保持 artifact 名称 `AMRToMP3-windows`，减少分发链路变化

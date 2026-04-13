@@ -12,7 +12,6 @@
 
 1. Run local verification before pushing:
    - `go test ./...`
-   - `python3 -m unittest discover -s tests -v`
 2. Commit only the intended source changes.
 3. Push to `main` when the goal is to produce a new Windows package.
 4. The push automatically triggers `Build Windows EXE` when the change touches one of these paths:

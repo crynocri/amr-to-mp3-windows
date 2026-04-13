@@ -24,7 +24,10 @@ class WindowsPackagingConfigTests(unittest.TestCase):
         self.assertIn("actions/setup-go", workflow)
         self.assertIn("go test ./...", workflow)
         self.assertIn(r"build\windows\build.ps1", workflow)
+        self.assertIn(r"scripts\windows\assert-context-menu.ps1", workflow)
         self.assertIn(r"scripts\windows\smoke-convert.ps1", workflow)
+        self.assertIn("install-shell", workflow)
+        self.assertIn("uninstall-shell", workflow)
         self.assertIn("AMRToMP3-Setup.exe", workflow)
 
     def test_build_script_uses_go_and_inno_setup(self) -> None:

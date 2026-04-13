@@ -64,6 +64,32 @@ jobs:
         run: |
           powershell -ExecutionPolicy Bypass -File .\build\windows\build.ps1
 
+      - name: Smoke test shell context menu
+        shell: pwsh
+        run: |
+          $exePath = '.\dist\AMRToMP3.exe'
+          $rootKey = 'HKCU:\Software\Classes\SystemFileAssociations\.amr\shell\AMRToMP3.Convert'
+
+          if (-not (Test-Path $exePath)) {
+            throw "Packaged executable was not found at $exePath"
+          }
+
+          try {
+            & $exePath install-shell
+            if ($LASTEXITCODE -ne 0) {
+              throw "install-shell failed with exit code $LASTEXITCODE"
+            }
+
+            powershell -ExecutionPolicy Bypass -File .\scripts\windows\assert-context-menu.ps1
+          }
+          finally {
+            & $exePath uninstall-shell | Out-Null
+          }
+
+          if (Test-Path $rootKey) {
+            throw "Context menu key should be removed after uninstall: $rootKey"
+          }
+
       - name: Smoke test conversion
         shell: pwsh
         run: |
