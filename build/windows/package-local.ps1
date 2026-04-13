@@ -1,6 +1,8 @@
 param(
     [switch]$InstallTools,
-    [switch]$SkipTests
+    [switch]$SkipTests,
+    [ValidateSet("amd64", "arm64")]
+    [string]$TargetArch = "amd64"
 )
 
 Set-StrictMode -Version Latest
@@ -235,6 +237,7 @@ $distExe = Join-Path $projectRoot "dist\AMRToMP3.exe"
 $distSetup = Join-Path $projectRoot "dist\AMRToMP3-Setup.exe"
 
 Write-Host "Project root: $projectRoot"
+Write-Host "Packaging target architecture: $TargetArch"
 Ensure-Toolchain
 
 # Refresh PATH so newly installed tools are visible in this same session.
@@ -278,7 +281,7 @@ try {
     }
 
     Write-Host "Running build script..."
-    & powershell -ExecutionPolicy Bypass -File $buildScript
+    & powershell -ExecutionPolicy Bypass -File $buildScript -TargetArch $TargetArch
     if ($LASTEXITCODE -ne 0) {
         throw "Build script failed."
     }

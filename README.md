@@ -26,6 +26,7 @@
 - 子菜单：`转换为 MP3/WAV/AAC/M4A`
 - 当前命令模板使用 `"%1"` 占位符（单次调用单文件）
 - 安装器会在安装时执行 `install-shell`，卸载时执行 `uninstall-shell`
+- Setup 安装界面默认中文（`chinesesimplified`）
 
 ## 快速使用（开发态）
 
@@ -67,6 +68,12 @@ go run ./cmd/amrtoolexe convert --to wav --files "C:\a.amr;C:\b.amr"
 powershell -ExecutionPolicy Bypass -File .\build\windows\build.ps1
 ```
 
+说明：
+
+- 默认目标架构：`amd64`（对应客户常见 x64 Windows 环境）
+- 可选 `-TargetArch arm64` 构建 ARM64 Windows 包
+- 即使构建机是 ARM，也可以交叉编译产出 `amd64` 可执行文件
+
 ### 一键本地打包（Windows）
 
 ```powershell
@@ -76,7 +83,14 @@ powershell -ExecutionPolicy Bypass -File .\build\windows\package-local.ps1 -Inst
 可选参数：
 
 - `-SkipTests`：跳过 Go 测试后直接打包
-- `-InstallTools`：自动安装缺失的 Go / Inno Setup / Chocolatey / ffmpeg
+- `-InstallTools`：自动安装缺失的 Go / Inno Setup / ffmpeg
+- `-TargetArch amd64|arm64`：指定目标 Windows 架构（默认 `amd64`）
+
+示例（ARM 构建机为客户打 x64 包）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build\windows\package-local.ps1 -InstallTools -TargetArch amd64
+```
 
 ### 产物
 
@@ -91,11 +105,15 @@ dist/AMRToMP3-Setup.exe
 
 主要步骤：
 
+- 使用 matrix 构建 `amd64(x64)` 与 `arm64` 两套包
 - Windows runner 安装 Go、Inno Setup、ffmpeg
 - 执行 `go test ./...`
-- 执行 `build/windows/build.ps1`
-- 执行 `scripts/windows/smoke-convert.ps1`
-- 上传 artifact：`AMRToMP3-windows`
+- 执行 `build/windows/build.ps1 -TargetArch <arch>`
+- 仅在 `amd64` 上执行 `scripts/windows/assert-context-menu.ps1`（右键菜单冒烟）
+- 仅在 `amd64` 上执行 `scripts/windows/smoke-convert.ps1`
+- 上传 artifact：
+  - `AMRToMP3-windows-x64`
+  - `AMRToMP3-windows-arm64`
 
 ## 测试与验证
 
@@ -104,7 +122,7 @@ dist/AMRToMP3-Setup.exe
 go test ./...
 ```
 
-## 迁移状态
+## 当前状态
 
 - Python 版本代码已下线
 - 当前发布主线为 Go + Inno Setup

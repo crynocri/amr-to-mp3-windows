@@ -3,6 +3,20 @@
 #define MyAppPublisher "crynocri"
 #define MyAppExeName "AMRToMP3.exe"
 
+#ifndef TargetArch
+  #define TargetArch "amd64"
+#endif
+
+#if TargetArch == "arm64"
+  #define InstallerArchitecturesAllowed "arm64"
+  #define InstallerArchitecturesInstallMode "arm64"
+#elif TargetArch == "amd64"
+  #define InstallerArchitecturesAllowed "x64"
+  #define InstallerArchitecturesInstallMode "x64"
+#else
+  #error Unsupported TargetArch. Expected amd64 or arm64.
+#endif
+
 [Setup]
 AppId={{0A1A06C6-EA3F-4C95-A02C-4B87E9B9374B}
 AppName={#MyAppName}
@@ -17,14 +31,14 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayIcon={app}\{#MyAppExeName}
-ArchitecturesAllowed=x64compatible
-ArchitecturesInstallIn64BitMode=x64compatible
+ArchitecturesAllowed={#InstallerArchitecturesAllowed}
+ArchitecturesInstallIn64BitMode={#InstallerArchitecturesInstallMode}
+ShowLanguageDialog=no
+DefaultLanguage=chinesesimplified
 
 [Languages]
+Name: "chinesesimplified"; MessagesFile: "languages\ChineseSimplified.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
-#ifexist "compiler:Languages\ChineseSimplified.isl"
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
-#endif
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked

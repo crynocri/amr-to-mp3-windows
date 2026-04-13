@@ -31,6 +31,24 @@ func TestInstallerOutputsSetupExe(t *testing.T) {
 	if !strings.Contains(installer, "OutputBaseFilename=AMRToMP3-Setup") {
 		t.Fatalf("installer should output AMRToMP3-Setup.exe")
 	}
+	if !strings.Contains(installer, "DefaultLanguage=chinesesimplified") {
+		t.Fatalf("installer should default to Chinese language")
+	}
+	if !strings.Contains(installer, `MessagesFile: "languages\ChineseSimplified.isl"`) {
+		t.Fatalf("installer should load Chinese language file from project")
+	}
+	for _, token := range []string{
+		"#ifndef TargetArch",
+		"#define TargetArch \"amd64\"",
+		"InstallerArchitecturesAllowed",
+		"InstallerArchitecturesInstallMode",
+		"ArchitecturesAllowed={#InstallerArchitecturesAllowed}",
+		"ArchitecturesInstallIn64BitMode={#InstallerArchitecturesInstallMode}",
+	} {
+		if !strings.Contains(installer, token) {
+			t.Fatalf("installer should contain %q", token)
+		}
+	}
 	if !strings.Contains(installer, `Parameters: "install-shell"`) {
 		t.Fatalf("installer should call install-shell on install")
 	}
@@ -43,14 +61,20 @@ func TestWorkflowRunsGoBuildPipeline(t *testing.T) {
 	workflow := readFileForTest(t, ".github/workflows/windows-package.yml")
 
 	for _, token := range []string{
+		"matrix:",
+		"goarch: amd64",
+		"goarch: arm64",
 		"actions/setup-go",
 		"go test ./...",
 		`build\windows\build.ps1`,
+		"-TargetArch",
 		`scripts\windows\assert-context-menu.ps1`,
 		`scripts\windows\smoke-convert.ps1`,
 		"install-shell",
 		"uninstall-shell",
 		"AMRToMP3-Setup.exe",
+		"AMRToMP3-windows-x64",
+		"AMRToMP3-windows-arm64",
 	} {
 		if !strings.Contains(workflow, token) {
 			t.Fatalf("workflow should contain %q", token)
@@ -73,6 +97,10 @@ func TestBuildScriptUsesGoAndInnoSetup(t *testing.T) {
 	buildScript := readFileForTest(t, "build/windows/build.ps1")
 
 	for _, token := range []string{
+		"[ValidateSet(\"amd64\", \"arm64\")]",
+		"$TargetArch",
+		"$env:GOARCH = $TargetArch",
+		"\"/DTargetArch=$TargetArch\"",
 		"$bundledFfmpeg",
 		"-version",
 		"$versionOutput = & $bundledFfmpeg -version 2>&1",
@@ -81,6 +109,21 @@ func TestBuildScriptUsesGoAndInnoSetup(t *testing.T) {
 	} {
 		if !strings.Contains(buildScript, token) {
 			t.Fatalf("build script should contain %q", token)
+		}
+	}
+}
+
+func TestPackageLocalPassesTargetArchToBuildScript(t *testing.T) {
+	packageScript := readFileForTest(t, "build/windows/package-local.ps1")
+
+	for _, token := range []string{
+		"[ValidateSet(\"amd64\", \"arm64\")]",
+		"$TargetArch",
+		"-TargetArch",
+		"-File $buildScript",
+	} {
+		if !strings.Contains(packageScript, token) {
+			t.Fatalf("package-local script should contain %q", token)
 		}
 	}
 }
