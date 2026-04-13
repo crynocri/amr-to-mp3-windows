@@ -1,12 +1,17 @@
 package app
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/crynocri/amr-to-mp3-windows/internal/config"
+	"github.com/crynocri/amr-to-mp3-windows/internal/converter"
+	"github.com/crynocri/amr-to-mp3-windows/internal/ffmpeg"
 )
 
 type IOStreams struct {
@@ -51,6 +56,7 @@ func runConvert(args []string, streams IOStreams) int {
 	fs.SetOutput(streams.Stderr)
 	target := fs.String("to", "", "Target format. Example: mp3")
 	files := fs.String("files", "", "Input files. Use ';' as separator.")
+	workers := fs.Int("workers", 0, "Worker count for batch conversion. Default: auto (2-4).")
 
 	if err := fs.Parse(args); err != nil {
 		return config.ExitCodeParam
@@ -59,13 +65,46 @@ func runConvert(args []string, streams IOStreams) int {
 		fmt.Fprintln(streams.Stderr, "missing required flag: --to")
 		return config.ExitCodeParam
 	}
-	if strings.TrimSpace(*files) == "" {
-		fmt.Fprintln(streams.Stderr, "missing required flag: --files")
+	fileInputs := parseFileInputs(*files, fs.Args())
+	if len(fileInputs) == 0 {
+		fmt.Fprintln(streams.Stderr, "missing input files: pass --files or trailing file paths")
 		return config.ExitCodeParam
 	}
 
-	fmt.Fprintln(streams.Stderr, "convert is not implemented yet")
-	return config.ExitCodeConvert
+	executableDir := executableDirectory()
+	ffmpegPath, err := ffmpeg.ResolveExecutable(executableDir)
+	if err != nil {
+		fmt.Fprintf(streams.Stderr, "ffmpeg not available: %v\n", err)
+		return config.ExitCodeFFmpeg
+	}
+
+	runner, err := ffmpeg.NewRunner(ffmpegPath)
+	if err != nil {
+		fmt.Fprintf(streams.Stderr, "failed to initialize ffmpeg runner: %v\n", err)
+		return config.ExitCodeFFmpeg
+	}
+	service, err := converter.NewService(runner, *workers)
+	if err != nil {
+		fmt.Fprintf(streams.Stderr, "failed to initialize converter service: %v\n", err)
+		return config.ExitCodeConvert
+	}
+
+	result := service.ConvertBatch(context.Background(), fileInputs, *target)
+	fmt.Fprintf(streams.Stdout, "conversion summary: success=%d failed=%d\n", result.SuccessCount(), result.FailureCount())
+	for i, failure := range result.Failures {
+		if i >= 3 {
+			break
+		}
+		fmt.Fprintf(streams.Stderr, "failed: %s (%v)\n", failure.Input, failure.Err)
+	}
+
+	if result.FailureCount() == 0 {
+		return config.ExitCodeOK
+	}
+	if result.SuccessCount() == 0 {
+		return config.ExitCodeAllFailed
+	}
+	return config.ExitCodePartial
 }
 
 func runInstallShell(streams IOStreams) int {
@@ -79,8 +118,23 @@ func runUninstallShell(streams IOStreams) int {
 }
 
 func runProbe(streams IOStreams) int {
-	fmt.Fprintln(streams.Stderr, "probe is not implemented yet")
-	return config.ExitCodeFFmpeg
+	executableDir := executableDirectory()
+	ffmpegPath, err := ffmpeg.ResolveExecutable(executableDir)
+	if err != nil {
+		fmt.Fprintf(streams.Stderr, "ffmpeg not available: %v\n", err)
+		return config.ExitCodeFFmpeg
+	}
+	runner, err := ffmpeg.NewRunner(ffmpegPath)
+	if err != nil {
+		fmt.Fprintf(streams.Stderr, "failed to initialize ffmpeg runner: %v\n", err)
+		return config.ExitCodeFFmpeg
+	}
+	if err := runner.Probe(context.Background()); err != nil {
+		fmt.Fprintf(streams.Stderr, "ffmpeg probe failed: %v\n", err)
+		return config.ExitCodeFFmpeg
+	}
+	fmt.Fprintf(streams.Stdout, "ffmpeg ok: %s\n", ffmpegPath)
+	return config.ExitCodeOK
 }
 
 func printUsage(w io.Writer) {
@@ -95,4 +149,32 @@ Subcommands:
   uninstall-shell  Remove Windows shell context menu
   probe            Check ffmpeg availability
 `, config.AppName)
+}
+
+func parseFileInputs(filesFlag string, trailing []string) []string {
+	if strings.TrimSpace(filesFlag) == "" {
+		return compactInputs(trailing)
+	}
+	parts := strings.Split(filesFlag, ";")
+	return compactInputs(parts)
+}
+
+func compactInputs(inputs []string) []string {
+	out := make([]string, 0, len(inputs))
+	for _, input := range inputs {
+		trimmed := strings.TrimSpace(strings.Trim(input, `"`))
+		if trimmed == "" {
+			continue
+		}
+		out = append(out, trimmed)
+	}
+	return out
+}
+
+func executableDirectory() string {
+	selfPath, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	return filepath.Dir(selfPath)
 }
