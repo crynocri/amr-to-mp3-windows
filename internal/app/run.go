@@ -12,6 +12,7 @@ import (
 	"github.com/crynocri/amr-to-mp3-windows/internal/config"
 	"github.com/crynocri/amr-to-mp3-windows/internal/converter"
 	"github.com/crynocri/amr-to-mp3-windows/internal/ffmpeg"
+	"github.com/crynocri/amr-to-mp3-windows/internal/shell"
 )
 
 type IOStreams struct {
@@ -108,13 +109,24 @@ func runConvert(args []string, streams IOStreams) int {
 }
 
 func runInstallShell(streams IOStreams) int {
-	fmt.Fprintln(streams.Stderr, "install-shell is not implemented yet")
-	return config.ExitCodeConvert
+	selfPath, err := os.Executable()
+	if err != nil {
+		fmt.Fprintf(streams.Stderr, "failed to resolve executable path: %v\n", err)
+		return config.ExitCodeConvert
+	}
+	if err := shell.InstallContextMenu(selfPath, streams.Stdout); err != nil {
+		fmt.Fprintf(streams.Stderr, "install-shell failed: %v\n", err)
+		return config.ExitCodeConvert
+	}
+	return config.ExitCodeOK
 }
 
 func runUninstallShell(streams IOStreams) int {
-	fmt.Fprintln(streams.Stderr, "uninstall-shell is not implemented yet")
-	return config.ExitCodeConvert
+	if err := shell.UninstallContextMenu(streams.Stdout); err != nil {
+		fmt.Fprintf(streams.Stderr, "uninstall-shell failed: %v\n", err)
+		return config.ExitCodeConvert
+	}
+	return config.ExitCodeOK
 }
 
 func runProbe(streams IOStreams) int {
