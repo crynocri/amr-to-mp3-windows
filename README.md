@@ -15,6 +15,12 @@
 go run ./cmd/amrtoolexe --help
 ```
 
+## 当前发布策略（双轨）
+
+- **Go + FFmpeg + 右键菜单** 是新主线（Phase 1 目标形态）
+- **Python GUI 版本** 暂时保留，作为迁移期间回归对照与紧急回退路径
+- 计划在 1-2 个迭代内并行验证后，再执行 Python 代码下线
+
 ## 已实现的最小可用版本
 
 - 桌面 GUI，默认启动图形界面
@@ -27,9 +33,25 @@ go run ./cmd/amrtoolexe --help
 
 ## 推荐分发方式
 
-推荐使用 **PyInstaller onefile** 打包为 Windows 桌面应用，并将 `ffmpeg.exe` 一起打包进单文件程序。
+当前推荐使用 **Go 二进制 + Inno Setup 安装器** 发布 Windows 版本，并将 `ffmpeg.exe` 放入安装目录 `bin\ffmpeg.exe`。
 
-这样普通用户只需要拿到一个 `AMRToMP3.exe`，不需要额外安装 Python，也不需要手动配置命令行环境。程序启动时会由 PyInstaller 自动解包运行时依赖。
+这样普通用户只需要安装 `AMRToMP3-Setup.exe`，安装后可通过资源管理器右键菜单执行转换。安装器会负责注册/卸载右键菜单。
+
+说明：旧的 PyInstaller onefile 流程仍保留在仓库历史中，便于双轨阶段回归验证。
+
+## Go 版本核心命令
+
+```bash
+# 检测 ffmpeg 可用性
+go run ./cmd/amrtoolexe probe
+
+# 单文件转换（输出到源文件同目录）
+go run ./cmd/amrtoolexe convert --to mp3 --files "C:\path\voice.amr"
+
+# 安装/卸载右键菜单（Windows）
+go run ./cmd/amrtoolexe install-shell
+go run ./cmd/amrtoolexe uninstall-shell
+```
 
 ## 运行方式
 
@@ -149,6 +171,19 @@ dist/AMRToMP3.exe
 运行自动化测试：
 
 ```bash
+go test ./...
+python3 -m unittest discover -s tests -v
+```
+
+单独执行 Go 的 FFmpeg 参数与转换相关测试：
+
+```bash
+go test ./tests_go -v
+```
+
+单独执行 Python 旧版回归测试：
+
+```bash
 python3 -m unittest discover -s tests -v
 ```
 
@@ -163,3 +198,9 @@ python3 -m unittest tests.test_converter.ConverterSmokeTests.test_real_ffmpeg_sm
 - 当前仓库中的 GUI 使用 Tkinter。若开发机 Python 缺少 Tk 支持，`python3 -m amr_to_mp3` 会给出明确错误提示。
 - 本次交付已在当前机器完成核心转换和入口层自动化验证，但 **Windows GUI 实际点选流程** 仍需在带 Tk 的 Windows 环境做一次人工确认。
 - 批量导入目录当前为非递归模式，只导入所选目录下的 `.amr` 文件。
+
+## 回滚策略（发布级）
+
+- 在 Go 主线发布前，保留可回退标签（示例：`pre-go-migration-2026-04-13`）
+- 若线上发现关键问题，可先回切到最近稳定标签，再继续修复 Go 分支
+- 回滚后仍保持 artifact 名称 `AMRToMP3-windows`，降低分发链路变更风险

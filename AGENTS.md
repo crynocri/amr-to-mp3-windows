@@ -2,7 +2,8 @@
 
 ## Project Scope
 
-- This repo ships a Windows desktop build of the `amr_to_mp3` app.
+- This repo now ships a Windows desktop build centered on the Go binary (`AMRToMP3.exe`) + bundled `ffmpeg.exe` + context menu integration.
+- Legacy Python `amr_to_mp3` code remains in a dual-track migration window and must not be removed until migration validation is complete.
 - Release packaging should be produced by GitHub Actions on Windows, not by local macOS builds.
 - The packaging workflow is `.github/workflows/windows-package.yml`.
 - The uploaded artifact name is always `AMRToMP3-windows`.
@@ -10,15 +11,22 @@
 ## Deployment Flow
 
 1. Run local verification before pushing:
+   - `go test ./...`
    - `python3 -m unittest discover -s tests -v`
 2. Commit only the intended source changes.
 3. Push to `main` when the goal is to produce a new Windows package.
 4. The push automatically triggers `Build Windows EXE` when the change touches one of these paths:
    - `.github/workflows/windows-package.yml`
    - `amr_to_mp3/**`
+   - `cmd/**`
+   - `internal/**`
    - `build/windows/**`
+   - `scripts/windows/**`
    - `tests/**`
+   - `tests_go/**`
    - `README.md`
+   - `AGENTS.md`
+   - `go.mod`
    - `vendor/ffmpeg/README.md`
 5. If no qualifying path changed, trigger the workflow manually with:
    - `gh workflow run windows-package.yml`
@@ -64,11 +72,18 @@ If `gh run download` hits transient GitHub API EOF errors, use the artifact API 
 
 After download, verify these paths exist:
 
+- `artifacts/AMRToMP3-windows/AMRToMP3-Setup.exe`
 - `artifacts/AMRToMP3-windows/AMRToMP3.exe`
 
 Useful check:
 
-- `ls -lh artifacts/AMRToMP3-windows.zip artifacts/AMRToMP3-windows/AMRToMP3.exe`
+- `ls -lh artifacts/AMRToMP3-windows.zip artifacts/AMRToMP3-windows/AMRToMP3-Setup.exe artifacts/AMRToMP3-windows/AMRToMP3.exe`
+
+## Migration and Rollback
+
+- Keep Python and Go tracks running in parallel for 1-2 iterations before removing Python source.
+- Before major migration release, create a rollback tag (for example: `pre-go-migration-2026-04-13`).
+- If production issues are found, roll back to the last stable tag first, then continue fixes on the Go branch.
 
 ## Git Hygiene
 
