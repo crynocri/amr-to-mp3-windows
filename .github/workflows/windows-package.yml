@@ -8,10 +8,16 @@ on:
     paths:
       - '.github/workflows/windows-package.yml'
       - 'amr_to_mp3/**'
+      - 'cmd/**'
+      - 'internal/**'
       - 'build/windows/**'
+      - 'scripts/windows/**'
       - 'tests/**'
+      - 'tests_go/**'
       - 'README.md'
+      - 'AGENTS.md'
       - 'vendor/ffmpeg/README.md'
+      - 'go.mod'
 
 jobs:
   build-windows:
@@ -20,16 +26,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          python-version: '3.12'
+          go-version-file: go.mod
 
       - name: Install build dependencies
         shell: pwsh
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install pyinstaller
+          choco install innosetup -y --no-progress
 
       - name: Install ffmpeg
         shell: pwsh
@@ -49,39 +54,26 @@ jobs:
           New-Item -ItemType Directory -Force -Path vendor/ffmpeg | Out-Null
           Copy-Item $realBinary vendor/ffmpeg/ffmpeg.exe -Force
 
-      - name: Run tests
+      - name: Run Go tests
         shell: pwsh
         run: |
-          python -m unittest discover -s tests -v
+          go test ./...
 
       - name: Build Windows package
         shell: pwsh
         run: |
           powershell -ExecutionPolicy Bypass -File .\build\windows\build.ps1
 
-      - name: Smoke test bundled ffmpeg
+      - name: Smoke test conversion
         shell: pwsh
         run: |
-          $packageExe = '.\dist\AMRToMP3.exe'
-          $probeLog = Join-Path $PWD 'amr-to-mp3-probe.log'
-          if (-not (Test-Path $packageExe)) {
-            throw "Packaged executable was not found at $packageExe"
-          }
-          if (Test-Path $probeLog) {
-            Remove-Item $probeLog -Force
-          }
-          $env:AMR_TO_MP3_PROBE_LOG = $probeLog
-          $process = Start-Process -FilePath $packageExe -ArgumentList '--probe-ffmpeg' -PassThru -Wait
-          if (Test-Path $probeLog) {
-            Get-Content $probeLog
-          }
-          if ($process.ExitCode -ne 0) {
-            throw "Bundled ffmpeg probe failed"
-          }
+          powershell -ExecutionPolicy Bypass -File .\scripts\windows\smoke-convert.ps1 -ExePath .\dist\AMRToMP3.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: AMRToMP3-windows
-          path: dist/AMRToMP3.exe
+          path: |
+            dist/AMRToMP3-Setup.exe
+            dist/AMRToMP3.exe
           if-no-files-found: error

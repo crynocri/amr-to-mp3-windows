@@ -5,12 +5,12 @@ from pathlib import Path
 
 
 class WindowsPackagingConfigTests(unittest.TestCase):
-    def test_spec_uses_pyinstaller_onefile_mode(self) -> None:
-        spec = Path("build/windows/amr_to_mp3.spec").read_text(encoding="utf-8")
+    def test_installer_outputs_setup_exe(self) -> None:
+        installer = Path("build/windows/installer.iss").read_text(encoding="utf-8")
 
-        self.assertIn("exclude_binaries=False", spec)
-        self.assertIn("a.binaries", spec)
-        self.assertNotIn("COLLECT(", spec)
+        self.assertIn("OutputBaseFilename=AMRToMP3-Setup", installer)
+        self.assertIn('Parameters: "install-shell"', installer)
+        self.assertIn('Parameters: "uninstall-shell"', installer)
 
     def test_workflow_uses_real_chocolatey_ffmpeg_binary(self) -> None:
         workflow = Path(".github/workflows/windows-package.yml").read_text(encoding="utf-8")
@@ -18,21 +18,23 @@ class WindowsPackagingConfigTests(unittest.TestCase):
         self.assertNotIn(r"C:\ProgramData\chocolatey\bin\ffmpeg.exe", workflow)
         self.assertIn(r"C:\ProgramData\chocolatey\lib\ffmpeg", workflow)
 
-    def test_workflow_smoke_tests_bundled_ffmpeg_after_packaging(self) -> None:
+    def test_workflow_runs_go_build_pipeline(self) -> None:
         workflow = Path(".github/workflows/windows-package.yml").read_text(encoding="utf-8")
 
-        self.assertIn("Start-Process", workflow)
-        self.assertIn("--probe-ffmpeg", workflow)
-        self.assertIn("AMR_TO_MP3_PROBE_LOG", workflow)
-        self.assertNotIn(r"dist\AMRToMP3\_internal\ffmpeg.exe", workflow)
+        self.assertIn("actions/setup-go", workflow)
+        self.assertIn("go test ./...", workflow)
+        self.assertIn(r"build\windows\build.ps1", workflow)
+        self.assertIn(r"scripts\windows\smoke-convert.ps1", workflow)
+        self.assertIn("AMRToMP3-Setup.exe", workflow)
 
-    def test_build_script_validates_bundled_ffmpeg_before_packaging(self) -> None:
+    def test_build_script_uses_go_and_inno_setup(self) -> None:
         build_script = Path("build/windows/build.ps1").read_text(encoding="utf-8")
 
         self.assertIn("$bundledFfmpeg", build_script)
         self.assertIn("-version", build_script)
         self.assertIn("$versionOutput = & $bundledFfmpeg -version 2>&1", build_script)
-        self.assertNotIn("& $bundledFfmpeg -version | Select-Object -First 1", build_script)
+        self.assertIn("go build", build_script)
+        self.assertIn("iscc", build_script)
 
 
 if __name__ == "__main__":
