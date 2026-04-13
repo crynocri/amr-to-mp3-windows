@@ -34,7 +34,7 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 ArchitecturesAllowed={#InstallerArchitecturesAllowed}
 ArchitecturesInstallIn64BitMode={#InstallerArchitecturesInstallMode}
 ShowLanguageDialog=no
-DefaultLanguage=chinesesimplified
+LanguageDetectionMethod=none
 
 [Languages]
 Name: "chinesesimplified"; MessagesFile: "languages\ChineseSimplified.isl"

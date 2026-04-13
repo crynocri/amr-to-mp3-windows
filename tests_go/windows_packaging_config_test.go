@@ -31,8 +31,25 @@ func TestInstallerOutputsSetupExe(t *testing.T) {
 	if !strings.Contains(installer, "OutputBaseFilename=AMRToMP3-Setup") {
 		t.Fatalf("installer should output AMRToMP3-Setup.exe")
 	}
-	if !strings.Contains(installer, "DefaultLanguage=chinesesimplified") {
-		t.Fatalf("installer should default to Chinese language")
+	if strings.Contains(installer, "DefaultLanguage=") {
+		t.Fatalf("installer should not use unsupported DefaultLanguage directive")
+	}
+	if !strings.Contains(installer, "LanguageDetectionMethod=none") {
+		t.Fatalf("installer should disable auto language detection to default to first language entry")
+	}
+	if !strings.Contains(installer, "ShowLanguageDialog=no") {
+		t.Fatalf("installer should suppress language dialog")
+	}
+	if !strings.Contains(installer, "Name: \"chinesesimplified\"; MessagesFile: \"languages\\ChineseSimplified.isl\"") {
+		t.Fatalf("installer should list Chinese language entry")
+	}
+	if !strings.Contains(installer, "Name: \"english\"; MessagesFile: \"compiler:Default.isl\"") {
+		t.Fatalf("installer should list English language entry")
+	}
+	chineseIdx := strings.Index(installer, "Name: \"chinesesimplified\"; MessagesFile: \"languages\\ChineseSimplified.isl\"")
+	englishIdx := strings.Index(installer, "Name: \"english\"; MessagesFile: \"compiler:Default.isl\"")
+	if chineseIdx == -1 || englishIdx == -1 || chineseIdx > englishIdx {
+		t.Fatalf("installer should place Chinese language before English to make Chinese the default")
 	}
 	if !strings.Contains(installer, `MessagesFile: "languages\ChineseSimplified.isl"`) {
 		t.Fatalf("installer should load Chinese language file from project")
