@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - '*'
     paths:
       - '.github/workflows/windows-package.yml'
       - 'cmd/**'
@@ -16,6 +18,9 @@ on:
       - 'AGENTS.md'
       - 'vendor/ffmpeg/README.md'
       - 'go.mod'
+
+permissions:
+  contents: write
 
 jobs:
   build-windows:
@@ -121,3 +126,38 @@ jobs:
             dist/AMRToMP3-Setup.exe
             dist/AMRToMP3.exe
           if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-windows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: AMRToMP3-windows-x64
+          path: release-assets/x64
+
+      - name: Download arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: AMRToMP3-windows-arm64
+          path: release-assets/arm64
+
+      - name: Prepare release asset names
+        run: |
+          cp release-assets/x64/AMRToMP3-Setup.exe release-assets/AMRToMP3-Setup-x64.exe
+          cp release-assets/x64/AMRToMP3.exe release-assets/AMRToMP3-x64.exe
+          cp release-assets/arm64/AMRToMP3-Setup.exe release-assets/AMRToMP3-Setup-arm64.exe
+          cp release-assets/arm64/AMRToMP3.exe release-assets/AMRToMP3-arm64.exe
+
+      - name: Create or update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            release-assets/AMRToMP3-Setup-x64.exe
+            release-assets/AMRToMP3-x64.exe
+            release-assets/AMRToMP3-Setup-arm64.exe
+            release-assets/AMRToMP3-arm64.exe
