@@ -25,6 +25,13 @@ function Assert-RegistryValue([string]$Path, [string]$Name, [string]$ExpectedVal
 
 Assert-RegistryKey -Path $RootKey
 Assert-RegistryValue -Path $RootKey -Name "MUIVerb" -ExpectedValue $ExpectedParentLabel
+$parentIcon = (Get-ItemProperty -Path $RootKey).Icon
+if ([string]::IsNullOrWhiteSpace($parentIcon)) {
+    throw "Missing registry value 'Icon' on key: $RootKey"
+}
+if ($parentIcon -notmatch "AMRToMP3\.exe|context-menu-logo\.ico") {
+    throw "Parent menu icon should reference AMRToMP3.exe or context-menu-logo.ico. Actual: $parentIcon"
+}
 
 $verbs = @(
     @{ Key = "to_mp3"; Label = "转换为 MP3"; To = "mp3" },

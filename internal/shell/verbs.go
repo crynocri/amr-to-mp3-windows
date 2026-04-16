@@ -1,11 +1,18 @@
 package shell
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+)
 
 const (
-	parentMenuLabel  = "格式转换"
-	parentMenuKey    = "AMRToMP3.Convert"
-	parentRegistryHK = `HKCU\Software\Classes\SystemFileAssociations\.amr\shell\` + parentMenuKey
+	parentMenuLabel          = "格式转换"
+	parentMenuKey            = "AMRToMP3.Convert"
+	contextMenuIconFileName  = "context-menu-logo.ico"
+	contextMenuIconDirectory = "assets"
+	parentRegistryHK         = `HKCU\Software\Classes\SystemFileAssociations\.amr\shell\` + parentMenuKey
 )
 
 type Verb struct {
@@ -29,6 +36,18 @@ func ParentRegistryKey() string {
 
 func ParentMenuLabel() string {
 	return parentMenuLabel
+}
+
+func ContextMenuIconPath(executablePath string) string {
+	if strings.TrimSpace(executablePath) == "" {
+		return ""
+	}
+
+	iconPath := filepath.Join(filepath.Dir(executablePath), contextMenuIconDirectory, contextMenuIconFileName)
+	if _, err := os.Stat(iconPath); err == nil {
+		return iconPath
+	}
+	return executablePath
 }
 
 func BuildCommand(executablePath, targetFormat string) string {

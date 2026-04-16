@@ -47,6 +47,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "..\..\dist\AMRToMP3.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\vendor\ffmpeg\ffmpeg.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "..\..\vendor\ffmpeg\README.md"; DestDir: "{app}\licenses"; Flags: ignoreversion
+Source: "..\..\build\windows\assets\context-menu-logo.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

@@ -81,6 +81,7 @@ func TestInstallerOutputsSetupExe(t *testing.T) {
 		"InstallerArchitecturesInstallMode",
 		"ArchitecturesAllowed={#InstallerArchitecturesAllowed}",
 		"ArchitecturesInstallIn64BitMode={#InstallerArchitecturesInstallMode}",
+		`Source: "..\..\build\windows\assets\context-menu-logo.ico"; DestDir: "{app}\assets"; Flags: ignoreversion`,
 	} {
 		if !strings.Contains(installer, token) {
 			t.Fatalf("installer should contain %q", token)

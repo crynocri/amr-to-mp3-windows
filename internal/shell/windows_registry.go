@@ -23,6 +23,9 @@ func InstallContextMenu(executablePath string, stdout io.Writer) error {
 	if err := regSetValue(parent, "MUIVerb", ParentMenuLabel()); err != nil {
 		return err
 	}
+	if err := regSetValue(parent, "Icon", ContextMenuIconPath(executablePath)); err != nil {
+		return err
+	}
 	// Empty SubCommands indicates a cascading submenu built from child shell keys.
 	if err := regSetValue(parent, "SubCommands", ""); err != nil {
 		return err
